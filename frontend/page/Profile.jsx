@@ -1,55 +1,49 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import CircularProgress from "@mui/material/CircularProgress";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login"); 
+      return;
+    }
+
     axios
       .get("http://localhost:5000/api/v1/auth/profile", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUser(res.data.user))
-      .catch((err) => console.log(err));
-  }, []);
+      .catch((err) => {
+        console.error(err.response?.data || err.message);
+        localStorage.removeItem("token"); 
+        navigate("/login");
+      });
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  if (!user) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100 p-4">
-      <Card className="w-full max-w-lg shadow-xl">
-        <CardContent>
-          <Typography variant="h5" className="text-center mb-6">
-            User Profile
-          </Typography>
-
-          {!user ? (
-            <div className="flex justify-center">
-              <CircularProgress />
-            </div>
-          ) : (
-            <div className="space-y-3 text-gray-800">
-              <Typography><strong>Name:</strong> {user.name}</Typography>
-              <Typography><strong>Email:</strong> {user.email}</Typography>
-              {user.createdAt && (
-                <Typography>
-                  <strong>Joined:</strong>{" "}
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </Typography>
-              )}
-
-              {/* If you want to show full JSON as well */}
-              <pre className="bg-gray-200 p-3 rounded text-sm mt-4">
-                {JSON.stringify(user, null, 2)}
-              </pre>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+      <h2 className="text-2xl font-bold mb-4">Welcome, {user.name}</h2>
+      <p>Email: {user.email}</p>
+     
+      <button
+        onClick={handleLogout}
+        className="mt-4 bg-red-600 text-white p-2 rounded hover:bg-red-700"
+      >
+        Logout
+      </button>
     </div>
   );
 }

@@ -1,76 +1,37 @@
 import React, { useState } from "react";
 import axios from "axios";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [data, setData] = useState({ email: "", password: "" });
+  const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setData({ ...data, [e.target.name]: e.target.value });
+  const handleChange = (e) => setData({ ...data, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!data.email || !data.password) return alert("Fill all fields");
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/v1/auth/login",
-        data
-      );
-
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-        alert("Login Successful");
-        window.location.href = "/profile";
-      } else {
-        alert(res.data.msg);
-      }
+      const res = await axios.post("http://localhost:5000/api/v1/auth/login", data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      localStorage.setItem("token", res.data.token);
+      alert(res.data.msg);
+      navigate("/profile");
     } catch (err) {
-      alert("Login failed");
+      alert(err.response?.data?.msg || "Login failed");
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardContent>
-          <Typography variant="h5" className="text-center mb-6">
-            Login
-          </Typography>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              variant="outlined"
-              onChange={handleChange}
-            />
-
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type="password"
-              variant="outlined"
-              onChange={handleChange}
-            />
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              className="!bg-blue-600 hover:!bg-blue-700"
-            >
-              Login
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <form onSubmit={handleSubmit} className="bg-white p-8 shadow-md rounded w-full max-w-md">
+        <h2 className="text-center mb-4 text-xl font-bold">Login</h2>
+        <input type="email" placeholder="Email" name="email" onChange={handleChange} className="border p-2 w-full mb-4" />
+        <input type="password" placeholder="Password" name="password" onChange={handleChange} className="border p-2 w-full mb-4" />
+        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded">Login</button>
+      </form>
     </div>
   );
 }

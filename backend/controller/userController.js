@@ -1,76 +1,111 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import nodemailer from "nodemailer"
+
+import sendEmail from "../utils/SendEmail.js";
 
 
 
 
-export  const Signup =async (req, res) => {
-    try {const { name, email, password } = req.body;
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
-    const userExists = await User.findOne({ email });
-    if (userExists)
-         return res .status(402).json({ msg: "User already exists" });
 
-    const hashedPass = await bcrypt.hash(password, 10);
+export const signup = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
 
-    const user = new User({ name, email, password: hashedPass });
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({ msg: "Name, email and password are required" });
+    }
+
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ msg: "Email already exists" });
+    }
+
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    
+    const otp = generateOTP();
+    const otpExpire = Date.now() + 10 * 60 * 1000; 
+
+   
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      otp,
+      otpExpire
+    });
+
+    
+    await sendEmail(
+      email,
+      "Email Verification OTP",
+      `<h2>Your OTP is ${otp}</h2>`
+    );
+
+    
+    res.status(201).json({
+      msg: "OTP sent to email",
+      userId: user._id
+    });
+
+  } catch (error) {
+    console.error("Signup Error:", error);
+
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ msg: "Email already exists" });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) return res.status(400).json({ msg: "User not found" });
+
+    if (user.otp !== otp || user.otpExpire < Date.now())
+      return res.status(400).json({ msg: "Invalid OTP or expired" });
+
+    user.verified = true;
+    user.otp = undefined;
+    user.otpExpire = undefined;
     await user.save();
 
-    res.status(201).json({ msg: "Signup successful" });
-        
-    } catch (error) {
-        res.status(500).json({ msg: err.message });
+    res.json({ msg: "Email Verified Successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-        
-    
 };
 
 
 export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ msg: "User not found" });
 
-    
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ msg: "User not found" });
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(400).json({ msg: "Wrong password" });
 
-    
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Incorrect password" });
+  if (!user.verified) return res.status(400).json({ msg: "Please verify email first" });
 
-    
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    
-    const mailOptions = {
-      from: `"Your App Name" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Login Notification",
-      text: `Hello ${user.name || "User"},\n\nYou just logged into your account successfully.\n\nIf this wasn't you, secure your account immediately.`,
-    };
-
-    
-    await transporter.sendMail(mailOptions);
-
-    
-    res.status(200).json({ msg: "Login successful", token, user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: err.message });
-  }
+  res.json({ msg: "Login successful", token }); 
 };
+
 
 
 export const Profile=async (req, res) => {
