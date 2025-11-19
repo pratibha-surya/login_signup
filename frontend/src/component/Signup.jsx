@@ -18,7 +18,7 @@ function Signup() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/v1/auth/signup",
+        "/api/v1/auth/signup",
         data,
         { headers: { "Content-Type": "application/json" } }
       );

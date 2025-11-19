@@ -13,7 +13,7 @@ function Login() {
     if (!data.email || !data.password) return alert("Fill all fields");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/v1/auth/login", data, {
+      const res = await axios.post("/api/v1/auth/login", data, {
         headers: { "Content-Type": "application/json" },
       });
       localStorage.setItem("token", res.data.token);

@@ -12,7 +12,7 @@ function VerifyOtp() {
     if (!otp) return alert("Enter OTP");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/v1/auth/verify-otp", { userId, otp }, {
+      const res = await axios.post("/api/v1/auth/verify-otp", { userId, otp }, {
         headers: { "Content-Type": "application/json" },
       });
       alert(res.data.msg);

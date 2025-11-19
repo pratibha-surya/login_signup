@@ -15,7 +15,7 @@ function Profile() {
     }
 
     axios
-      .get("http://localhost:5000/api/v1/auth/profile", {
+      .get("/api/v1/auth/profile", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUser(res.data.user))
