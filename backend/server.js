@@ -20,7 +20,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin:  "https://localhost:5173",
     credentials: true,
   })
 );
@@ -29,15 +29,13 @@ app.use(
 app.use("/api/v1/auth", authRoute);
 
 
-app.use(express.static(path.join(__dirname, "../client/dist")));
+const clientDistPath = path.join(__dirname, "../client/dist");
+app.use(express.static(clientDistPath));
 
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+  res.sendFile(path.join(clientDistPath, "index.html"));
 });
 
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

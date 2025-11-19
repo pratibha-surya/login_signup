@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         //target: "http://localhost:5000",
-        target:"https://login-signup-5qp9.onrender.com",
+        target:"https://login-signup-3-wa6b.onrender.com",
         changeOrigin: true,
         secure: false,
       }
